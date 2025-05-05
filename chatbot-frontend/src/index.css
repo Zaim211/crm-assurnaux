@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+nav {
+  background-color: #007BFF;
+  padding: 1rem;
+  width: 100%;
+}
+
+nav h1 {
+  color: white;
+  display: inline;
+}
+
+nav a {
+  color: white;
+  margin-left: 20px;
+  text-decoration: none;
+}
+
+.hero {
+  text-align: center;
+  padding: 80px 20px;
+  background-color: #f5f5f5;
+}
+
+.hero h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.hero a {
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.features {
+  display: flex;
+  justify-content: space-around;
+  padding: 50px;
+}
+
+.features div {
+  background-color: #f9f9f9;
+  padding: 20px;
+  width: 30%;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.signup {
+  background-color: #eeeeee;
+  padding: 40px;
+  text-align: center;
+}
+
+.signup form {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.footer {
+  background-color: #007BFF;
+  color: white;
+  text-align: center;
+  padding: 10px;
+}
+
+
+/* Reduce the font size for table rows */
+.ant-table td {
+  font-size: 12px; /* Adjust the size as needed */
+}
+.ant-input::placeholder {
+  font-size: 12px; /* Adjust the value as needed */
+}
+
+/* Reduce the font size for table headers */
+.ant-table th {
+  font-size: 2px; /* Adjust the size for header titles */
+}
+
+/* Optionally reduce the padding for a more compact table */
+.ant-table td, .ant-table th {
+  padding: 8px; /* Adjust the padding for your needs */
+}
+
+.leads-container {
+  padding: 24px;
+  background-color: #f4f4f4;
+}
+
+.ant-table {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  color: #333;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.ant-table-tbody > tr > td {
+  text-align: center;
+}
+
+.ant-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Custom styles for table */
+.custom-table .ant-table-thead > tr > th {
+  background-color: #2563eb; /* Tailwind's blue-600 */
+  color: #fff;
+  font-weight: bold;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  background-color: #f9fafb; /* Tailwind's gray-50 */
+  color: #4b5563; /* Tailwind's gray-700 */
+  padding: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  background-color: #e0f2fe; /* Tailwind's light blue-100 */
+}
+
+.custom-table .ant-pagination-item-active {
+  border-color: #2563eb;
+}
+
+.custom-table .ant-pagination-item-active a {
+  color: #2563eb;
+  font-weight: bold;
+}
+/* You can add this CSS in your CSS file or inline styles */
+.banner-image {
+  width: 100%; /* Ensures the image takes the full width of the container */
+  height: 200px; /* Set a fixed height for all images */
+  object-fit: contain; /* Ensures the image maintains aspect ratio and fills the container */
+}
+
+/* Ensures the sidebar content is always visible */
+.sidebar-content {
+  display: block;
+  visibility: visible;
+  overflow: visible;
+}
+.program-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 cards per row by default */
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (max-width: 1024px) {
+  .program-container {
+    grid-template-columns: repeat(2, 1fr); /* 2 per row on tablets */
+  }
+}
+
+@media (max-width: 640px) {
+  .program-container {
+    grid-template-columns: 1fr; /* Stack on small devices */
+    padding: 8px;
+  }
+}
+
+.program-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  background-color: white;
+  width: 100%;
+}
+
+.program-card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.program-card-content {
+  flex-grow: 1;
+  padding: 16px;
+}
+
+.program-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.program-description {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 767px) {
+  .program-card-content {
+    padding: 12px;
+  }
+
+  .program-title {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .program-description {
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+  }
+}
+
+.program-card-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid #ddd;
+}
