@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -17,7 +16,6 @@ import {
   Divider,
   Badge,
   Select,
-  DatePicker
 } from "antd";
 import {
   PlusOutlined,
@@ -45,7 +43,7 @@ const statusColors = {
   pending: "orange"
 };
 
-const CommerciauxPage = () => {
+const Interlouteurs = () => {
   const [commercials, setCommercials] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -470,4 +468,4 @@ const CommerciauxPage = () => {
   );
 };
 
-export default CommerciauxPage;
+export default Interlouteurs;

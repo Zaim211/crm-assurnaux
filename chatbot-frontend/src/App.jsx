@@ -28,8 +28,17 @@ import AjouterProduit from "./pages/AjouterProduit";
 import MyCalendar from "./pages/Calendar";
 import TéléchargerDevis from "./pages/TéléchargerDevis";
 import AllCommands from "./pages/TéléchargerContract";
-import Facture from "./components/Facture";
+import Facture from "./components/Reclamations";
 import ImportLeads from "./pages/ImportLeads";
+import TicketDetail from "./pages/Admin/TicketDetail";
+import Sinistres from "./pages/Sinistres";
+import Catalogue from "./pages/Catalogue";
+import Tarification from "./pages/Tarification";
+import ListeDeConformité from "./pages/ListeDeConformité";
+import GuideDeConformité from "./pages/GuideDeConformité";
+import Commissions from "./pages/Commissions";
+import Mastructure from "./pages/Mastructure";
+import Interlouteurs from "./pages/Interlouteurs";
 
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -51,7 +60,7 @@ function App() {
             {/* `index` for Home to display only at `/` */}
             <Route index element={<Home />} />
             {/* Route for Leads at `/leads` */}
-            <Route path="leads" element={<Leads />} />
+            <Route path="clients" element={<Leads />} />
             <Route path="leads/:id/ajouter-produit" element={<AjouterProduit />} />
             <Route path="leads/:id/ajouter-produit/:produitId" element={<AjouterProduit />} />
             <Route path="/produits" element={<Programmes />} />
@@ -62,22 +71,39 @@ function App() {
             <Route path="/create-produit" element={<CreatePrograms />} />
             <Route path="/create-produit/:id" element={<CreatePrograms />} />
 
-            <Route path="/CalendrierCommerciale" element={<MyCalendar />} />
+            <Route path="/agenda" element={<MyCalendar />} />
             <Route path="/Devis" element={<TéléchargerDevis />} />
-            <Route path='/Factures' element={<Facture/>} />
+            <Route path='/reclamations' element={<Facture/>} />
+            <Route path="/reclamations/:id" element={<TicketDetail />} />
             <Route path="/Contrats" element={<AllCommands />} />
+            <Route path="/Sinistres" element={<Sinistres />} />
+            <Route path="/Liste-de-conformité" element={<ListeDeConformité />} />
+            <Route path="/Guide-de-conformité" element={<GuideDeConformité />} />
+            <Route path="/Mes-comissions" element={<Commissions />} />
+            <Route path="/Ma-structure" element={<Mastructure />} />
+            <Route path="/Mes-interlocuteurs" element={<Interlouteurs />} />
+
+
+
+
+
+
             <Route path="/import-leads" element={<ImportLeads />} />
             {/* <Route path="/lead/:id" element={<LeadDetailsPage />}/> */}
             <Route path="/affect-leads" element={<AffectuerLead />} />
             <Route path="/Paramètres" element={<CommerciauxPage />} />
-            <Route path="/list-leads" element={<ListLeads />} />
+            <Route path="/clients-lists" element={<ListLeads />} />
             <Route path="/magic-sms" element={<MagicSms />} />
             <Route path="/publicités" element={<Publicités />} />
             <Route path="/create-publicité" element={<CreatePub />} />
             <Route path="/create-publicité/:id" element={<CreatePub />} />
             <Route path="/settings" element={<Setting />} />
             {/* <Route path="/command/:leadId" element={<Commands />} /> */}
-     
+
+            <Route path="/catalogue" element={<Catalogue />} />
+            <Route path="/tarification" element={<Tarification />} />
+            
+            
 
             <Route path="/leads/:id/create-command" element={<CreateCommand />} />
             <Route path="/leads/:id/create-command/:commandId" element={<CreateCommand />} />

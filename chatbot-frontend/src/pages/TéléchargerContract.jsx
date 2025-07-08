@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
   Table,
-  Tag,
   Space,
   Button,
   message,
   Modal,
   Card,
   Statistic,
+  Select,
+  Input,
+  DatePicker,
 } from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-  FilePdfOutlined,
-} from "@ant-design/icons";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import moment from "moment";
 
+const { RangePicker } = DatePicker;
 
 const { confirm } = Modal;
 
 const AllCommands = () => {
   const [allCommands, setAllCommands] = useState([]);
-
+  const [pageSize, setPageSize] = useState(30);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalHT: 0,
@@ -33,13 +31,12 @@ const AllCommands = () => {
   });
   const token = localStorage.getItem("token");
   const decodedUser = token ? jwtDecode(token) : null;
-  const userLoged = decodedUser?.userId;
+
   const userRole = decodedUser?.role;
 
   useEffect(() => {
     fetchCommands();
   }, []);
-
 
   const fetchCommands = async () => {
     const token = localStorage.getItem("token");
@@ -53,7 +50,7 @@ const AllCommands = () => {
       const commandsData = response?.data;
       const decodedToken = token ? jwtDecode(token) : null;
       const currentUserId = decodedToken?.userId;
-      const role = decodedToken.role
+      const role = decodedToken.role;
       if (role === "Admin") {
         setAllCommands(commandsData); // Set only the "devis" commands
         updateStatistics(commandsData);
@@ -62,18 +59,16 @@ const AllCommands = () => {
           (cmd) => cmd.session === currentUserId
         );
 
-      // Filter commands to display only "devis" type
-      const devisCommands = filterecommand.filter(
-        (command) => command.command_type === "commande"
-      );
-      console.log('devisCommands', devisCommands)
+        // Filter commands to display only "devis" type
+        const devisCommands = filterecommand.filter(
+          (command) => command.command_type === "commande"
+        );
+        console.log("devisCommands", devisCommands);
 
-      setAllCommands(devisCommands); // Set only the "devis" commands
-      updateStatistics(devisCommands);
+        setAllCommands(devisCommands); // Set only the "devis" commands
+        updateStatistics(devisCommands);
       }
 
-      
-        
       setLoading(false);
     } catch (error) {
       console.error("Error fetching commands:", error);
@@ -81,7 +76,6 @@ const AllCommands = () => {
       setLoading(false);
     }
   };
-
 
   const updateStatistics = (commands) => {
     const totals = commands.reduce(
@@ -100,8 +94,6 @@ const AllCommands = () => {
     e.stopPropagation();
     window.location.href = `/lead/${record.lead}`;
   };
-
- 
 
   const handleDelete = (id, e) => {
     e.stopPropagation();
@@ -133,168 +125,278 @@ const AllCommands = () => {
     return value !== undefined && value !== null ? value : fallback;
   };
 
-
   const columns = [
     {
-      title: "Command",
-      dataIndex: "numCommand",
-      key: "numCommand",
-      render: (text) => safeRender(text),
-      sorter: (a, b) => (a.numCommand || "").localeCompare(b.numCommand || ""),
+      title: "N° contrat",
+      dataIndex: "numero_contrat",
+      key: "numero_contrat",
     },
     {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      render: (date) => moment(safeRender(date)).format("DD/MM/YYYY"),
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+      title: "Risque",
+      dataIndex: "risque",
+      key: "risque",
     },
     {
       title: "Client",
-      dataIndex: "nom",
-      key: "nom",
-      render: (text) => safeRender(text),
-      ellipsis: true,
-    },
-      {
-      title: "Créer par",
-      dataIndex: "commercialName",
-      key: "commercialName",
-      render: (text) => safeRender(text),
-      ellipsis: true,
+      dataIndex: "client",
+      key: "client",
     },
     {
-      title: "Produit",
-      dataIndex: "code",
-      key: "code",
-      render: (codes) => (
-        <div style={{ lineHeight: "1.5" }}>
-          {codes?.map((code, index) => (
-            <div
-              key={index}
-              style={{
-                // display: "flex",
-                // alignItems: "flex-start",
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ marginRight: 8 }}>•</span>
-              <span>{code}</span>
-            </div>
-          ))}
-        </div>
-      ),
+      title: "Assureur",
+      dataIndex: "assureur",
+      key: "assureur",
     },
     {
-      title: "Quantité",
-      dataIndex: "quantite",
-      key: "quantite",
-      render: (text) => `${safeRender(text, "0")}`,
-      // sorter: (a, b) => (a.quantite || 0) - (b.quantite || 0),
+      title: "Source",
+      dataIndex: "source",
+      key: "source",
     },
     {
-      title: "Total HT",
-      dataIndex: "totalHT",
-      key: "totalHT",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Date d'effet",
+      dataIndex: "date_effet",
+      key: "date_effet",
     },
     {
-      title: "Total TVA",
-      dataIndex: "totalTVA",
-      key: "totalTVA",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Date d'échéance",
+      dataIndex: "date_echeance",
+      key: "date_echeance",
     },
     {
-      title: "Marge",
-      dataIndex: "marge",
-      key: "marge",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Prime TTC",
+      dataIndex: "prime_ttc",
+      key: "prime_ttc",
     },
     {
-      title: "Total TTC",
-      dataIndex: "totalTTC",
-      key: "totalTTC",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalTTC || 0) - (b.totalTTC || 0),
+      title: "Commissions",
+      dataIndex: "commissions",
+      key: "commissions",
     },
     {
-      title: "Actions",
-      key: "actions",
+      title: "Gestionnaire",
+      dataIndex: "gestionnaire",
+      key: "gestionnaire",
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
       render: (_, record) => (
-        <Space size="middle">
-          <Button
-            icon={<EditOutlined />}
-            onClick={(e) => handleEdit(record, e)}
-          />
-          <Button
-            icon={<FilePdfOutlined />}
-            onClick={(e) => handleDownload(record._id, e)}
-          />
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={(e) => handleDelete(record._id, e)}
-          />
-        </Space>
+        <div className="flex gap-2">
+          <Button size="small">Voir</Button>
+          <Button size="small" danger>
+            Supprimer
+          </Button>
+        </div>
       ),
     },
   ];
 
-
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Contrat Management</h1>
+    <section className="container mx-auto">
+      <div className="mb-12 md:p-1 p-1">
+        <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-t-md shadow-sm gap-3 md:gap-0">
+          <h2 className="text-xs sm:text-sm font-semibold text-purple-900 text-center md:text-left">
+            Contrats ({allCommands.length})
+          </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <Statistic title="Total Contrats" value={stats.totalCommands} />
-        </Card>
-        <Card>
-          <Statistic title="Total HT" value={stats.totalHT} suffix="€" />
-        </Card>
-        <Card>
-          <Statistic title="Total TTC" value={stats.totalTTC} suffix="€" />
-        </Card>
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 sm:gap-4">
+            <Button type="primary" className="w-full md:w-auto">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-lg">+</span>
+                <span className="text-[10px] sm:text-xs whitespace-nowrap">
+                  ENREGISTRER UN CONTRAT
+                </span>
+              </div>
+            </Button>
+
+            {/* <Button
+                    type="primary"
+                    className="w-full md:w-auto"
+                    onClick={showModal}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-lg">+</span>
+                      <span className="text-[10px]  sm:text-xs whitespace-nowrap">
+                        ENREGISTRER UN CLIENT/PROSPECT
+                      </span>
+                    </div>
+                  </Button> */}
+          </div>
+        </div>
+        <div className="p-4 bg-white mt-6 border-t rounded-md border-gray-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Gestionaire Select */}
+            <div className="col-span-2">
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Période comprise entre
+              </label>
+              <RangePicker
+                className="w-full"
+                format="DD/MM/YYYY"
+                onChange={(dates) => handleFilterChange("periode", dates)}
+              />
+            </div>
+
+            {/* Risque Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Risque
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("risque", value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="auto">Auto</Option>
+                <Option value="habitation">Habitation</Option>
+                <Option value="sante">Santé</Option>
+              </Select>
+            </div>
+
+            {/* Commissions Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Commissions
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("commissions", value)}
+              >
+                <Option value="toutes">Toutes</Option>
+                <Option value="payee">Payée</Option>
+                <Option value="en_attente">En attente</Option>
+              </Select>
+            </div>
+
+            {/* Assureur Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Assureur
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("assureur", value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="axa">AXA</Option>
+                <Option value="allianz">Allianz</Option>
+                <Option value="macif">Macif</Option>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Gestionaire
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez -"
+                // onChange={(value) => handleFilterChange('gestionaire', value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="gestionaire1">Gestionaire 1</Option>
+                <Option value="gestionaire2">Gestionaire 2</Option>
+              </Select>
+            </div>
+
+            {/* Categorie Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Catégorie
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez -"
+                onChange={(value) => handleFilterChange("categorie", value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="client">Client</Option>
+                <Option value="prospect">Prospect</Option>
+              </Select>
+            </div>
+
+            {/* Status Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Statut
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                // onChange={(value) => handleFilterChange('status', value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="actif">Actif</Option>
+                <Option value="inactif">Inactif</Option>
+                <Option value="en_attente">En attente</Option>
+              </Select>
+            </div>
+
+            {/* Recherche Input */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Recherche
+              </label>
+              <Input
+                placeholder="Rechercher..."
+                allowClear
+                // onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">
-            {userRole === "commercial" ? "Mes contrats" : "Les contrats"}
-          </h2>
-          {/* <Button 
-            type="primary" 
-            onClick={() => window.location.href = '/command/new'}
-          >
-            Create New Command
-          </Button> */}
-        </div>
-
+      <div className="bg-white rounded-lg shadow-md w-full  overflow-x-auto">
         <Table
-          columns={columns.map((col) => ({
-            ...col,
-            title: (
-              <div className="flex flex-col items-center">
-                <div className="text-xs">{col.title}</div>
-              </div>
-            ),
-          }))}
-          dataSource={allCommands}
-          rowKey="_id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: true }}
+          columns={[
+            ...columns.map((col) => ({
+              ...col,
+              title: (
+                <div className="flex flex-col items-center">
+                  <div className="text-xs">{col.title}</div>
+                  {/* {col.key !== "action" && (
+                                  <Input
+                                    placeholder={`${col.title}`}
+                                    onChange={(e) => handleColumnSearch(e, col.key)}
+                                    // className="mt-2 text-sm sm:text-base w-full sm:w-auto"
+                                    size="medium"
+                                  />
+                                )} */}
+                </div>
+              ),
+            })),
+          ]}
+          dataSource={allCommands.slice(
+            (currentPage - 1) * pageSize,
+            currentPage * pageSize
+          )}
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total: allCommands.length,
+            // onChange: (page) => setCurrentPage(page),
+            onChange: (page, pageSize) => {
+              setCurrentPage(page);
+              setPageSize(pageSize);
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ["10", "20", "30", "50", "100"],
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          rowKey={(record) => record._id}
           bordered
-          onRow={(record) => ({
-            onClick: () => (window.location.href = `/lead/${record.lead}`),
-            style: { cursor: "pointer" },
-          })}
+          className="custom-table text-xs sm:text-sm"
+          // rowSelection={rowSelection}
+          tableLayout="auto"
         />
       </div>
-    </div>
+    </section>
   );
 };
 

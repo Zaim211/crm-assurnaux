@@ -1,41 +1,37 @@
 import React, { useState, useEffect } from "react";
 import {
   Table,
-  Tag,
   Space,
   Button,
   message,
   Modal,
   Card,
   Statistic,
+  Select,
+  Input,
+  DatePicker,
 } from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-  FilePdfOutlined,
-  SendOutlined
-} from "@ant-design/icons";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import moment from "moment";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import logo from "../assets/logo.jpeg";
+
+const { RangePicker } = DatePicker;
 
 const { confirm } = Modal;
 
-const AllDevis = () => {
+const MesDevis = () => {
   const [allCommands, setAllCommands] = useState([]);
+  const [pageSize, setPageSize] = useState(30);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-   totalHT: 0,
+    totalHT: 0,
     totalTTC: 0,
     totalCommands: 0,
   });
   const token = localStorage.getItem("token");
   const decodedUser = token ? jwtDecode(token) : null;
-  // const userLoged = decodedUser?.userId;
+
   const userRole = decodedUser?.role;
 
   useEffect(() => {
@@ -54,28 +50,25 @@ const AllDevis = () => {
       const commandsData = response?.data;
       const decodedToken = token ? jwtDecode(token) : null;
       const currentUserId = decodedToken?.userId;
-      const role = decodedToken.role
+      const role = decodedToken.role;
       if (role === "Admin") {
         setAllCommands(commandsData); // Set only the "devis" commands
         updateStatistics(commandsData);
       } else {
-    
-      
         const filterecommand = commandsData.filter(
           (cmd) => cmd.session === currentUserId
         );
 
-      // Filter commands to display only "devis" type
-      const devisCommands = filterecommand.filter(
-        (command) => command.command === "devis"
-      );
-      console.log('devisCommands', devisCommands)
+        // Filter commands to display only "devis" type
+        const devisCommands = filterecommand.filter(
+          (command) => command.command_type === "commande"
+        );
+        console.log("devisCommands", devisCommands);
 
-      setAllCommands(devisCommands); // Set only the "devis" commands
-      updateStatistics(devisCommands);
+        setAllCommands(devisCommands); // Set only the "devis" commands
+        updateStatistics(devisCommands);
       }
-      
-     
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching commands:", error);
@@ -97,18 +90,17 @@ const AllDevis = () => {
     setStats(totals);
   };
 
-  const handleEdit = (record, e) => {
+  const handleEdit = (e) => {
     e.stopPropagation();
-    window.location.href = `/leads/${record.lead}/create-command/${record._id}`;
+    window.location.href = `/lead/${record.lead}`;
   };
-  
 
   const handleDelete = (id, e) => {
     e.stopPropagation();
     confirm({
-      title: "Confirmation de suppression",
+      title: "Confirm Deletion",
       icon: <ExclamationCircleOutlined />,
-      content: "Êtes-vous sûr de vouloir supprimer ce devis ?",
+      content: "Are you sure you want to delete this command?",
       okText: "Delete",
       okType: "danger",
       cancelText: "Cancel",
@@ -121,7 +113,7 @@ const AllDevis = () => {
       await axios.delete(`/command/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      message.success("Devis supprimé avec succès");
+      message.success("Command deleted successfully");
       fetchCommands(); // Refresh the list after deletion
     } catch (error) {
       console.error("Error deleting command:", error);
@@ -133,617 +125,250 @@ const AllDevis = () => {
     return value !== undefined && value !== null ? value : fallback;
   };
 
-  const handleDownload = (commandId, e) => {
-    e.stopPropagation();
-
-    const command = allCommands.find((cmd) => cmd._id === commandId);
-    if (!command) {
-      message.error("Commande non trouvée");
-      return;
-    }
-
-    const doc = new jsPDF();
-
-    // === Add logo ===
-    const logoWidth = 20;
-    const logoHeight = 20;
-    doc.addImage(logo, "JPEG", 15, 15, logoWidth, logoHeight);
-
-    // === Company info just below logo ===
-    const infoStartY = 10 + logoHeight + 18; // e.g., 40
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    doc.text("Global energy", 15, infoStartY);
-    doc.text("99c boulevard Constantin Descat", 15, infoStartY + 6);
-    doc.text("9200 Tourcoing, France", 15, infoStartY + 12);
-    doc.text("Tél: +33 6 10 08 33 86", 15, infoStartY + 20);
-    doc.text("Email: global.energy@gmail.com", 15, infoStartY + 26);
-    doc.setTextColor(0, 102, 204);
-    doc.setFont(undefined, "bold");
-    doc.text(`Devis n°: ${command.originalNumCommand}`, 15, infoStartY + 50);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, "normal");
-    doc.setFontSize(8);
-    doc.text(`Valable 10 jours`, 15, infoStartY + 55);
-    doc.text(
-      `En date du: ${moment(command.date).format("DD/MM/YYYY")}`,
-      120,
-      infoStartY + 50
-    );
-
-    const infoBoxWidth = 80;
-    const infoBoxX = 120; // Starting X position
-
-    // Set text color that contrasts with the background
-    doc.setTextColor(40, 40, 40); // Dark gray text
-    const maxAddressWidth = 80; // Maximum width in points (about 80mm)
-
-    // Split the address into multiple lines if needed
-    const addressLines = doc.splitTextToSize(
-      command.address || "Non spécifié",
-      maxAddressWidth
-    );
-
-    const lineHeight = 7; // Height per line in points
-
-    const infoBoxHeights = 28 + (addressLines.length - 1) * lineHeight;
-    doc.setFillColor(229, 231, 235);
-    doc.setTextColor(40, 40, 40);
-    doc.rect(infoBoxX, infoStartY, infoBoxWidth, infoBoxHeights, "F");
-    // Add text on top of the background
-    doc.setFontSize(8);
-    doc.text(
-      `MONSIEUR: ${command.nom || "Non spécifié"}`,
-      infoBoxX + 5,
-      infoStartY + 8
-    );
-    // doc.text(`${command.address || "Non spécifié"}`, infoBoxX + 5, infoStartY + 16);
-    addressLines.forEach((line, index) => {
-      doc.text(line, infoBoxX + 5, infoStartY + 16 + index * lineHeight);
-    });
-    doc.text(
-      `${command.siret || "Non spécifié"}`,
-      infoBoxX + 5,
-      infoStartY + 16 + addressLines.length * lineHeight
-    );
-    // doc.text(`SIRET: ${command.siret || "Non spécifié"}`, infoBoxX + 5, infoBoxX + 24);
-
-    // === Table headers ===
-    const tableStartY = infoStartY + 70;
-    doc.setFillColor(0, 102, 204);
-    doc.setTextColor(255, 255, 255);
-    doc.setDrawColor(209, 213, 219);
-    doc.rect(15, tableStartY, 190, 10, "F");
-
-    doc.text("N°", 20, tableStartY + 6);
-    doc.text("Désignation", 35, tableStartY + 6);
-    doc.text("Qté", 125, tableStartY + 6);
-    doc.text("PU HT", 145, tableStartY + 6);
-    doc.text("TVA", 165, tableStartY + 6);
-    doc.text("Total HT", 200, tableStartY + 6, { align: "right" });
-
-    // === Table row ===
-    const cleanDescription = command.description.split(",")[0].trim();
-    const splitDescription = doc.splitTextToSize(cleanDescription, 90);
-    const rowHeight = Math.max(10, splitDescription.length * 30);
-    const rowY = tableStartY + 10;
-
-    doc.setFillColor(255, 255, 255);
-    doc.setTextColor(40, 40, 40);
-
-    // Borders
-    doc.rect(15, rowY, 15, rowHeight); // N°
-    doc.rect(30, rowY, 90, rowHeight); // Désignation
-    doc.rect(120, rowY, 20, rowHeight); // Qté
-    doc.rect(140, rowY, 20, rowHeight); // PU HT
-    doc.rect(160, rowY, 20, rowHeight); // TVA
-    doc.rect(180, rowY, 25, rowHeight); // Total HT
-
-    // Content
-    doc.text("1", 20, rowY + 12);
-    doc.text(splitDescription, 32, rowY + 12);
-    doc.text(command.quantite.toString() + " u", 125, rowY + 12);
-    doc.text(
-      `${(command.totalHT / command.quantite).toFixed(2)} €`,
-      142,
-      rowY + 12
-    );
-    doc.text("(20%)", 165, rowY + 12);
-    doc.text(`${command.totalHT.toFixed(2)} €`, 200, rowY + 12, {
-      align: "right",
-    });
-
-    // doc.setFont(undefined, "bold");
-    // doc.text("Le client", 30, rowY + rowHeight + 40);
-    const infoBoxWidths = 80;
-    const infoBoxXs = 30;
-    const infoStartYs = 250;
-    const infoBoxHeightss = 28;
-
-    doc.setFillColor(229, 231, 235);
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(8);
-    doc.rect(infoBoxXs, infoStartYs, infoBoxWidths, infoBoxHeightss, "F");
-    // Add text on top of the background
-    doc.text("Le client", infoBoxXs + 5, infoStartYs + 4);
-    doc.text("Mention manuscrite et datée :", infoBoxXs + 5, infoStartYs + 8);
-
-    doc.text("« Bon pour accord. »", infoBoxXs + 5, infoStartYs + 12);
-
-    const pageWidth = doc.internal.pageSize.getWidth(); // Get full width of the page
-    const paymentY = rowY + rowHeight + 15;
-    const totalsColWidth = 60;
-    const totalsRowHeight = 8;
-
-    // Align table to the far right
-    const totalsX = pageWidth - totalsColWidth - 5;
-
-    // Payment info (left side)
-    doc.setTextColor(40, 40, 40);
-    doc.text(
-      "Paiement par virement bancaire ou par carte bleue.",
-      15,
-      paymentY
-    );
-    doc.setDrawColor(209, 213, 219); // black line
-    doc.setLineWidth(0.2);
-    doc.line(totalsX, paymentY - 3, totalsX + totalsColWidth, paymentY - 3);
-    // Totals table data
-    const totalsData = [
-      { label: "Total HT", value: `${command.totalHT.toFixed(2)} €` },
-      { label: "TVA à 20%", value: `${command.totalTVA.toFixed(2)} €` },
-      {
-        label: "Total TTC",
-        value: `${command.totalTTC.toFixed(2)} €`,
-        bold: true,
-        bgColor: [229, 231, 235], // gray-200
-      },
-    ];
-
-    // Draw table background and border
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(209, 213, 219);
-    doc.setLineWidth(0.2);
-
-    // Add rows
-    totalsData.forEach((row, index) => {
-      const rowY = paymentY + index * totalsRowHeight;
-
-      // Background
-      if (row.bgColor) {
-        doc.setFillColor(...row.bgColor);
-        doc.rect(totalsX, rowY - 1, totalsColWidth, totalsRowHeight, "F");
-      }
-
-      // Text
-      if (row.bold) {
-        doc.setFont(undefined, "normal");
-      } else {
-        doc.setFont(undefined, "normal");
-      }
-
-      // Label and value
-      doc.setTextColor(40, 40, 40);
-      doc.text(row.label, totalsX + 4, rowY + 5);
-      doc.text(row.value, totalsX + totalsColWidth - 4, rowY + 5, {
-        align: "right",
-      });
-
-      // Divider line between rows
-      if (index < totalsData.length - 1) {
-        doc.line(
-          totalsX,
-          rowY + totalsRowHeight,
-          totalsX + totalsColWidth,
-          rowY + totalsRowHeight
-        );
-      }
-    });
-
-    // === Save ===
-    doc.save(`Devis_${command.numCommand}.pdf`);
-  };
-
-  const handleSendPdf = async (commandId, e) => {
-    e.stopPropagation();
-  
-    const command = allCommands.find((cmd) => cmd._id === commandId);
-    if (command.command_type !== "devis") {
-      return message.warning("Le devis est déjà validé et converti en commande.");
-
-    }
-  
-    const doc = new jsPDF();
-  
-     // === Add logo ===
-     const logoWidth = 20;
-     const logoHeight = 20;
-     doc.addImage(logo, "JPEG", 15, 15, logoWidth, logoHeight);
- 
-     // === Company info just below logo ===
-     const infoStartY = 10 + logoHeight + 18; // e.g., 40
-     doc.setFontSize(10);
-     doc.setTextColor(40, 40, 40);
-     doc.text("Global energy", 15, infoStartY);
-     doc.text("99c boulevard Constantin Descat", 15, infoStartY + 6);
-     doc.text("9200 Tourcoing, France", 15, infoStartY + 12);
-     doc.text("Tél: +33 6 10 08 33 86", 15, infoStartY + 20);
-     doc.text("Email: global.energy@gmail.com", 15, infoStartY + 26);
-     doc.setTextColor(0, 102, 204);
-     doc.setFont(undefined, "bold");
-     doc.text(`Devis n°: ${command.numCommand}`, 15, infoStartY + 50);
-     doc.setTextColor(0, 0, 0);
-     doc.setFont(undefined, "normal");
-     doc.setFontSize(8);
-     doc.text(`Valable 10 jours`, 15, infoStartY + 55);
-     doc.text(
-       `En date du: ${moment(command.date).format("DD/MM/YYYY")}`,
-       120,
-       infoStartY + 50
-     );
- 
-     const infoBoxWidth = 80;
-     const infoBoxX = 120; // Starting X position
- 
-     // Set text color that contrasts with the background
-     doc.setTextColor(40, 40, 40); // Dark gray text
-     const maxAddressWidth = 80; // Maximum width in points (about 80mm)
- 
-     // Split the address into multiple lines if needed
-     const addressLines = doc.splitTextToSize(
-       command.address || "Non spécifié",
-       maxAddressWidth
-     );
- 
-     const lineHeight = 7; // Height per line in points
- 
-     const infoBoxHeights = 28 + (addressLines.length - 1) * lineHeight;
-     doc.setFillColor(229, 231, 235);
-     doc.setTextColor(40, 40, 40);
-     doc.rect(infoBoxX, infoStartY, infoBoxWidth, infoBoxHeights, "F");
-     // Add text on top of the background
-     doc.setFontSize(8);
-     doc.text(
-       `MONSIEUR: ${command.nom || "Non spécifié"}`,
-       infoBoxX + 5,
-       infoStartY + 8
-     );
-     // doc.text(`${command.address || "Non spécifié"}`, infoBoxX + 5, infoStartY + 16);
-     addressLines.forEach((line, index) => {
-       doc.text(line, infoBoxX + 5, infoStartY + 16 + index * lineHeight);
-     });
-     doc.text(
-       `${command.siret || "Non spécifié"}`,
-       infoBoxX + 5,
-       infoStartY + 16 + addressLines.length * lineHeight
-     );
-     // doc.text(`SIRET: ${command.siret || "Non spécifié"}`, infoBoxX + 5, infoBoxX + 24);
- 
-     // === Table headers ===
-     const tableStartY = infoStartY + 70;
-     doc.setFillColor(0, 102, 204);
-     doc.setTextColor(255, 255, 255);
-     doc.setDrawColor(209, 213, 219);
-     doc.rect(15, tableStartY, 190, 10, "F");
- 
-     doc.text("N°", 20, tableStartY + 6);
-     doc.text("Désignation", 35, tableStartY + 6);
-     doc.text("Qté", 125, tableStartY + 6);
-     doc.text("PU HT", 145, tableStartY + 6);
-     doc.text("TVA", 165, tableStartY + 6);
-     doc.text("Total HT", 200, tableStartY + 6, { align: "right" });
- 
-     // === Table row ===
-     const cleanDescription = command.description.split(",")[0].trim();
-     const splitDescription = doc.splitTextToSize(cleanDescription, 90);
-     const rowHeight = Math.max(10, splitDescription.length * 30);
-     const rowY = tableStartY + 10;
- 
-     doc.setFillColor(255, 255, 255);
-     doc.setTextColor(40, 40, 40);
- 
-     // Borders
-     doc.rect(15, rowY, 15, rowHeight); // N°
-     doc.rect(30, rowY, 90, rowHeight); // Désignation
-     doc.rect(120, rowY, 20, rowHeight); // Qté
-     doc.rect(140, rowY, 20, rowHeight); // PU HT
-     doc.rect(160, rowY, 20, rowHeight); // TVA
-     doc.rect(180, rowY, 25, rowHeight); // Total HT
- 
-     // Content
-     doc.text("1", 20, rowY + 12);
-     doc.text(splitDescription, 32, rowY + 12);
-     doc.text(command.quantite.toString() + " u", 125, rowY + 12);
-     doc.text(
-       `${(command.totalHT / command.quantite).toFixed(2)} €`,
-       142,
-       rowY + 12
-     );
-     doc.text("(20%)", 165, rowY + 12);
-     doc.text(`${command.totalHT.toFixed(2)} €`, 200, rowY + 12, {
-       align: "right",
-     });
- 
-    //  doc.setFont(undefined, "bold");
-    //  doc.text("Le client", 30, rowY + rowHeight + 40);
-     const infoBoxWidths = 80;
-     const infoBoxXs = 30;
-     const infoStartYs = 250;
-     const infoBoxHeightss = 28;
- 
-     doc.setFillColor(229, 231, 235);
-     doc.setTextColor(40, 40, 40);
-     doc.setFontSize(8);
-     doc.rect(infoBoxXs, infoStartYs, infoBoxWidths, infoBoxHeightss, "F");
-     // Add text on top of the background
-     doc.text("Le client", infoBoxXs + 5, infoStartYs + 4);
-     doc.text("Mention manuscrite et datée :", infoBoxXs + 5, infoStartYs + 8);
- 
-     doc.text("« Bon pour accord. »", infoBoxXs + 5, infoStartYs + 12);
- 
-     const pageWidth = doc.internal.pageSize.getWidth(); // Get full width of the page
-     const paymentY = rowY + rowHeight + 15;
-     const totalsColWidth = 60;
-     const totalsRowHeight = 8;
- 
-     // Align table to the far right
-     const totalsX = pageWidth - totalsColWidth - 5;
- 
-     // Payment info (left side)
-     doc.setTextColor(40, 40, 40);
-     doc.text(
-       "Paiement par virement bancaire ou par carte bleue.",
-       15,
-       paymentY
-     );
-     doc.setDrawColor(209, 213, 219); // black line
-     doc.setLineWidth(0.2);
-     doc.line(totalsX, paymentY - 3, totalsX + totalsColWidth, paymentY - 3);
-     // Totals table data
-     const totalsData = [
-       { label: "Total HT", value: `${command.totalHT.toFixed(2)} €` },
-       { label: "TVA à 20%", value: `${command.totalTVA.toFixed(2)} €` },
-       {
-         label: "Total TTC",
-         value: `${command.totalTTC.toFixed(2)} €`,
-         bold: true,
-         bgColor: [229, 231, 235], // gray-200
-       },
-     ];
- 
-     // Draw table background and border
-     doc.setFillColor(255, 255, 255);
-     doc.setDrawColor(209, 213, 219);
-     doc.setLineWidth(0.2);
- 
-     // Add rows
-     totalsData.forEach((row, index) => {
-       const rowY = paymentY + index * totalsRowHeight;
- 
-       // Background
-       if (row.bgColor) {
-         doc.setFillColor(...row.bgColor);
-         doc.rect(totalsX, rowY - 1, totalsColWidth, totalsRowHeight, "F");
-       }
- 
-       // Text
-       if (row.bold) {
-         doc.setFont(undefined, "normal");
-       } else {
-         doc.setFont(undefined, "normal");
-       }
- 
-       // Label and value
-       doc.setTextColor(40, 40, 40);
-       doc.text(row.label, totalsX + 4, rowY + 5);
-       doc.text(row.value, totalsX + totalsColWidth - 4, rowY + 5, {
-         align: "right",
-       });
- 
-       // Divider line between rows
-       if (index < totalsData.length - 1) {
-         doc.line(
-           totalsX,
-           rowY + totalsRowHeight,
-           totalsX + totalsColWidth,
-           rowY + totalsRowHeight
-         );
-       }
-     });
- 
-    const pdfBase64 = doc.output("datauristring"); // OR use doc.output("dataurlstring");
-  
-    try {
-      await axios.post(
-        `/command/send-devis-email/${commandId}`, 
-        {
-          email: command.email,
-          pdf: pdfBase64,
-          commandId: command._id,
-          commandNum: command.numCommand,
-          phone: command.phone,
-          clientName: command.nom,
-          societeName: command.nom_societé,
-          code: command.code,
-          description: command.description,
-        },
-      );
-  
-      message.success("Devis envoyé avec succès par email !");
-    } catch (error) {
-      console.error("Erreur lors de l'envoi par email :", error);
-      message.error("Échec de l'envoi du devis.");
-    }
-  };
-  
-
   const columns = [
     {
-      title: "Devis",
-      dataIndex: "originalNumCommand",
-      key: "originalNumCommand",
-      render: (text) => safeRender(text),
-      sorter: (a, b) => (a.originalNumCommand || "").localeCompare(b.originalNumCommand || ""),
+      title: "N° devis",
+      dataIndex: "numero_contrat",
+      key: "numero_contrat",
     },
     {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      render: (date) => moment(safeRender(date)).format("DD/MM/YYYY"),
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+      title: "Risque",
+      dataIndex: "risque",
+      key: "risque",
     },
     {
       title: "Client",
-      dataIndex: "nom",
-      key: "nom",
-      render: (text) => safeRender(text),
-      ellipsis: true,
+      dataIndex: "client",
+      key: "client",
     },
     {
-      title: "Créer par",
-      dataIndex: "commercialName",
-      key: "commercialName",
-      render: (text) => safeRender(text),
-      ellipsis: true,
-    },
-    // {
-    //   title: "Produit",
-    //   dataIndex: "code",
-    //   key: "code",
-    //   render: (text) => safeRender(text),
-    //   ellipsis: true,
-    // },
-    {
-      title: "Produit",
-      dataIndex: "code",
-      key: "code",
-      render: (codes) => (
-        <div style={{ lineHeight: "1.5" }}>
-          {codes?.map((code, index) => (
-            <div
-              key={index}
-              style={{
-                // display: "flex",
-                // alignItems: "flex-start",
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ marginRight: 8 }}>•</span>
-              <span>{code}</span>
-            </div>
-          ))}
-        </div>
-      ),
+      title: "Assureur",
+      dataIndex: "assureur",
+      key: "assureur",
     },
     {
-      title: "Quantité",
-      dataIndex: "quantite",
-      key: "quantite",
-      render: (text) => `${safeRender(text, "0")}`,
-      // sorter: (a, b) => (a.quantite || 0) - (b.quantite || 0),
+      title: "Statut",
+      dataIndex: "status",
+      key: "status",
     },
     {
-      title: "Total HT",
-      dataIndex: "totalHT",
-      key: "totalHT",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Source",
+      dataIndex: "source",
+      key: "source",
     },
     {
-      title: "Total TVA",
-      dataIndex: "totalTVA",
-      key: "totalTVA",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Date d'effet",
+      dataIndex: "date_effet",
+      key: "date_effet",
     },
     {
-      title: "Marge",
-      dataIndex: "marge",
-      key: "marge",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalHT || 0) - (b.totalHT || 0),
+      title: "Prime TTC",
+      dataIndex: "prime_ttc",
+      key: "prime_ttc",
     },
     {
-      title: "Total TTC",
-      dataIndex: "totalTTC",
-      key: "totalTTC",
-      render: (text) => `${safeRender(text, "0")} €`,
-      sorter: (a, b) => (a.totalTTC || 0) - (b.totalTTC || 0),
+      title: "Gestionnaire",
+      dataIndex: "gestionnaire",
+      key: "gestionnaire",
     },
     {
-      title: "Actions",
-      key: "actions",
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
       render: (_, record) => (
-        <Space size="middle">
-          <Button
-            icon={<EditOutlined />}
-            onClick={(e) => handleEdit(record, e)}
-          />
-          <Button
-            icon={<FilePdfOutlined />}
-            onClick={(e) => handleDownload(record._id, e)}
-          />
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={(e) => handleDelete(record._id, e)}
-          />
-           <Button
-    icon={<SendOutlined />}
-    onClick={(e) => handleSendPdf(record._id, e)}
-    title="Envoyer le devis"
-  />
-        </Space>
+        <div className="flex gap-2">
+          <Button size="small">Voir</Button>
+          <Button size="small" danger>
+            Supprimer
+          </Button>
+        </div>
       ),
     },
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Devis Management</h1>
+    <section className="container mx-auto">
+      <div className="mb-12 md:p-1 p-1">
+        <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white rounded-t-md shadow-sm gap-3 md:gap-0">
+          <h2 className="text-xs sm:text-sm font-semibold text-purple-900 text-center md:text-left">
+            Devis ({allCommands.length})
+          </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <Statistic title="Total Devis" value={stats.totalCommands} />
-        </Card>
-        <Card>
-          <Statistic title="Total HT" value={stats.totalHT} suffix="€" />
-        </Card>
-        <Card>
-          <Statistic title="Total TTC" value={stats.totalTTC} suffix="€" />
-        </Card>
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 sm:gap-4">
+            <Button type="primary" className="w-full md:w-auto">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-lg">+</span>
+                <span className="text-[10px] sm:text-xs whitespace-nowrap">
+                  ENREGISTRER UN DEVIS
+                </span>
+              </div>
+            </Button>
+
+          </div>
+        </div>
+        <div className="p-4 bg-white mt-6 border-t rounded-md border-gray-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Gestionaire Select */}
+            <div className="col-span-2">
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Période comprise entre
+              </label>
+              <RangePicker
+                className="w-full"
+                format="DD/MM/YYYY"
+                onChange={(dates) => handleFilterChange("periode", dates)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Gestionaire
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez -"
+                // onChange={(value) => handleFilterChange('gestionaire', value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="gestionaire1">Gestionaire 1</Option>
+                <Option value="gestionaire2">Gestionaire 2</Option>
+              </Select>
+            </div>
+              {/* Commissions Select */}
+              <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Type de client
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("client", value)}
+              >
+                <Option value="payee">Actif</Option>
+                <Option value="en_attente">Inactif</Option>
+              </Select>
+            </div>
+
+            {/* Risque Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Risque
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("risque", value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="auto">Auto</Option>
+                <Option value="habitation">Habitation</Option>
+                <Option value="sante">Santé</Option>
+              </Select>
+            </div>
+
+          
+
+            {/* Assureur Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Assureur
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                onChange={(value) => handleFilterChange("assureur", value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="axa">AXA</Option>
+                <Option value="allianz">Allianz</Option>
+                <Option value="macif">Macif</Option>
+              </Select>
+            </div>
+
+          
+
+       
+
+            {/* Status Select */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Statut
+              </label>
+              <Select
+                className="w-full"
+                placeholder="-- Choisissez --"
+                // onChange={(value) => handleFilterChange('status', value)}
+              >
+                <Option value="tous">Tous</Option>
+                <Option value="actif">Actif</Option>
+                <Option value="inactif">Inactif</Option>
+                <Option value="en_attente">En attente</Option>
+              </Select>
+            </div>
+
+            {/* Recherche Input */}
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Recherche
+              </label>
+              <Input
+                placeholder="Rechercher..."
+                allowClear
+                // onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">
-            {userRole === "commercial" ? "Mes Devis" : "Tous les Devis"}
-          </h2>
-        </div>
-
+      <div className="bg-white rounded-lg shadow-md w-full  overflow-x-auto">
         <Table
-          columns={columns.map((col) => ({
-            ...col,
-            title: (
-              <div className="flex flex-col items-center">
-                <div className="text-xs">{col.title}</div>
-              </div>
-            ),
-          }))}
-          dataSource={allCommands}
-          rowKey="_id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: true }}
+          columns={[
+            ...columns.map((col) => ({
+              ...col,
+              title: (
+                <div className="flex flex-col items-center">
+                  <div className="text-xs">{col.title}</div>
+                  {/* {col.key !== "action" && (
+                                  <Input
+                                    placeholder={`${col.title}`}
+                                    onChange={(e) => handleColumnSearch(e, col.key)}
+                                    // className="mt-2 text-sm sm:text-base w-full sm:w-auto"
+                                    size="medium"
+                                  />
+                                )} */}
+                </div>
+              ),
+            })),
+          ]}
+          dataSource={allCommands.slice(
+            (currentPage - 1) * pageSize,
+            currentPage * pageSize
+          )}
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total: allCommands.length,
+            // onChange: (page) => setCurrentPage(page),
+            onChange: (page, pageSize) => {
+              setCurrentPage(page);
+              setPageSize(pageSize);
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ["10", "20", "30", "50", "100"],
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          rowKey={(record) => record._id}
           bordered
-          onRow={(record) => ({
-            onClick: () => (window.location.href = `/lead/${record.lead}`),
-            style: { cursor: "pointer" },
-          })}
+          className="custom-table text-xs sm:text-sm"
+          // rowSelection={rowSelection}
+          tableLayout="auto"
         />
       </div>
-    </div>
+    </section>
   );
 };
 
-export default AllDevis;
+export default MesDevis;

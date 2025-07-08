@@ -17,6 +17,19 @@ const eventSchema = new mongoose.Schema({
   objective: { type: String, required: true },
   comment: { type: String, required: false },
   lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
+  nom: { type: String, required: true },
+  createdBy: {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: 'createdBy.userType'
+    },
+    userType: {
+      type: String,
+      enum: ['Admin', 'Commercial']
+    },
+    name: String
+  },
+  createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 const Event = mongoose.model('Event', eventSchema);

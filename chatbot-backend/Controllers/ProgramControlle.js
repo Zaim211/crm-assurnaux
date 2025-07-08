@@ -92,7 +92,7 @@ class ProgramController {
  
       const leadId = req.body.leadId;
 
-      const { event_date, event_time, objective, comment, session } = req.body;
+      const { event_date, event_time, objective, comment, session, createdBy, nom } = req.body;
   
       const newEvent = new Event({
         session,
@@ -100,7 +100,13 @@ class ProgramController {
         event_time,
         objective,
         comment,
-        lead: leadId
+        lead: leadId,
+        nom,
+        createdBy: {
+          user: createdBy.id,
+          userType: createdBy.role,
+          name: createdBy.name
+        },
       });
   
       await newEvent.save();
@@ -113,12 +119,10 @@ class ProgramController {
   static async getAllEvents(req, res) {
     const { id } = req.params; // Get leadId from query parameter
     const session = req.userId;
-    console.log('id', id)
-    console.log('session', session)
+  
   
     try {
       const events = await Event.find({ lead: new mongoose.Types.ObjectId(id), session: new mongoose.Types.ObjectId(session) }).sort({ event_date: -1 });
-      console.log('events', events);
       res.status(200).json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -129,7 +133,6 @@ class ProgramController {
     const session = req.userId;
     try {
       const events = await Event.find({ session: new mongoose.Types.ObjectId(session) });
-      console.log('events', events);
       res.status(200).json(events);
     } catch (error) {
       console.error("Error fetching events:", error);

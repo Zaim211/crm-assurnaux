@@ -8,7 +8,10 @@ const ManagerController = require('../Controllers/ManagerController');
 const ProgramController = require('../Controllers/ProgramControlle');
 const ProduitController = require('../Controllers/ProduitController');
 const PanierController = require('../Controllers/PanierController');
+const ReclamationsController = require('../Controllers/ReclamationsController');
+const SinistresController = require('../Controllers/SinistresController');
 const verifyToken = require('../middleware/verifyToken');
+const PdfController = require('../Controllers/pdfController');
 const router = Router();
 
 router.get("/", AppController.test);
@@ -97,6 +100,32 @@ router.put('/panier/:panierId', PanierController.updatePanierItem);
 
 // import leads routes
 router.post('/import', DataController.importLeads);
+
+
+router.get('/tickets', DataController.getAllTickets);
+router.post('/tickets', verifyToken, DataController.createTicket);
+router.put('/tickets/:id', DataController.updateTicket);
+router.get('/tickets/:id', DataController.getTicketById);
+router.delete('/tickets/:id', DataController.deleteTicket);
+
+
+router.post("/upload", PdfController.uploadPdf);
+
+// Download PDF
+router.get("/download/:id", PdfController.downloadPdf);
+
+router.get('/reclamations', ReclamationsController.getAllReclamations);
+router.post('/reclamations', ReclamationsController.createReclamation);
+router.get('/reclamations/:id', ReclamationsController.getReclamationById);
+router.put('/reclamations/:id', ReclamationsController.updateReclamationById);
+router.delete('/reclamations/:id', ReclamationsController.deleteReclamationById);
+
+router.post('/sinistres', SinistresController.createSinistre);
+router.get('/sinistres', SinistresController.getAllSinistres);
+router.get('/sinistres/:id', SinistresController.getSinistreById);
+router.put('/sinistres/:id', SinistresController.updateSinistreById);
+router.delete('/sinistres/:id', SinistresController.deleteSinistreById);
+
 
 
 module.exports = router;
